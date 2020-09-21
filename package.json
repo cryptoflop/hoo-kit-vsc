@@ -10,16 +10,61 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:hoo-kit-vsc.helloWorld"
+		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "hoo-kit-vsc.helloWorld",
-				"title": "Hello World"
+				"command": "hoo-kit.start",
+				"title": "Start hoo-kit",
+				"icon": "$(debug-start)"
+			},
+			{
+				"command": "hoo-kit.stop",
+				"title": "Stop hoo-kit",
+				"icon": "$(debug-stop)"
+			},
+			{
+				"command": "hoo-kit.event.start",
+				"title": "Start event"
+			},
+			{
+				"command": "hoo-kit.event.stop",
+				"title": "Stop event"
 			}
-		]
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"icon": "resources/icons/logo.svg",
+					"id": "hoo-kit",
+					"title": "hoo-kit"
+				}
+			]
+		},
+		"views": {
+			"hoo-kit": [
+				{
+					"id": "hoo-kit.tasks",
+					"name": "Tasks"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "hoo-kit.start",
+					"when": "hoo-kit-active == false",
+					"group": "navigation"
+				},
+				{
+					"command": "hoo-kit.start",
+					"when": "hoo-kit-active == true",
+					"group": "navigation"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
