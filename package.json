@@ -10,7 +10,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"*"
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -34,6 +34,26 @@
 				"title": "Stop event"
 			}
 		],
+		"configuration": {
+			"title": "hoo-kit",
+			"properties": {
+				"hoo-kit.active": {
+					"type": "boolean",
+					"default": true,
+					"description": "Defines if hoo-kit should be active."
+				},
+				"hoo-kit.runOnStart": {
+					"type": "boolean",
+					"default": false,
+					"description": "Defines if hoo-kit should be run when VSCode is started."
+				},
+				"hoo-kit.tasks": {
+					"type": "array",
+					"default": [],
+					"description": "hoo-kit task declarations."
+				}
+			}
+		},
 		"viewsContainers": {
 			"activitybar": [
 				{
@@ -47,7 +67,8 @@
 			"hoo-kit": [
 				{
 					"id": "hoo-kit.tasks",
-					"name": "Tasks"
+					"name": "Tasks",
+					"when": "hoo-kit.active"
 				}
 			]
 		},
@@ -55,13 +76,19 @@
 			"view/title": [
 				{
 					"command": "hoo-kit.start",
-					"when": "hoo-kit-active == false",
+					"when": "hoo-kit.running == false",
 					"group": "navigation"
 				},
 				{
-					"command": "hoo-kit.start",
-					"when": "hoo-kit-active == true",
+					"command": "hoo-kit.stop",
+					"when": "hoo-kit.running == true",
 					"group": "navigation"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "hoo-kit.event.start",
+					"when": "viewItem.task.active"
 				}
 			]
 		}
