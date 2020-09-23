@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { ConfigPaths } from './config';
-import { TasksProvider } from './views/tasks';
+import { HookitTaskItem, TasksProvider } from './views/tasks';
 
 let extensionContext: vscode.ExtensionContext;
 export function getExtensionContext() {
@@ -17,12 +17,23 @@ export function setExtensionContext(name: string, context: unknown) {
 	vscode.commands.executeCommand('setContext', name, context);
 }
 
+const publicContextListener = new Map<string, ((newValue: unknown) => void)[]>();
+export function listenForPublicContext(prop: string, callback: (newValue: unknown) => void) {
+	if (!publicContextListener.has(prop)) {
+		publicContextListener.set(prop, []);
+	}
+	publicContextListener.get(prop)?.push(callback);
+}
 const publicContext = new Proxy(
 	{},
 	{
 		set(target: { [key: string]: unknown }, prop: string, value: unknown) {
 			target[prop] = value;
 			setExtensionContext('hoo-kit.' + prop, value);
+			const listeners = publicContextListener.get(prop);
+			if (listeners && listeners.length > 0) {
+				listeners.forEach((cb) => cb(value));
+			}
 			return true;
 		}
 	}
@@ -104,8 +115,18 @@ function initialize() {
 const commands = [
 	{ command: 'start', action: () => startHookit() },
 	{ command: 'stop', action: () => stopHookit() },
-	{ command: 'event.start', action: () => {} },
-	{ command: 'event.stop', action: () => {} }
+	{
+		command: 'event.activate',
+		action: (taskNode: HookitTaskItem) => {
+			console.log(taskNode);
+		}
+	},
+	{
+		command: 'event.deactivate',
+		action: (taskNode: HookitTaskItem) => {
+			console.log(taskNode);
+		}
+	}
 ];
 function declareCommands() {
 	commands.forEach((commandDef) => {
@@ -121,9 +142,13 @@ function declareViews() {
 	);
 }
 
-let hookitInstance;
 async function startHookit() {
 	if (!publicContext.running) {
+		// setConfig({ tasks: getConfig<HookitTask>(ConfigPaths.Tasks) }, () => {
+		// 	// todo save config
+		// });
+		// startEventManager();
+		// startTaskManager();
 		publicContext.running = true;
 	}
 }

@@ -27,13 +27,13 @@
 			},
 			{
 				"icon": "$(debug-start)",
-				"command": "hoo-kit.event.activate",
-				"title": "Activate event"
+				"command": "hoo-kit.task.activate",
+				"title": "Activate task"
 			},
 			{
 				"icon": "$(debug-stop)",
-				"command": "hoo-kit.event.deactivate",
-				"title": "Deactivate event"
+				"command": "hoo-kit.task.deactivate",
+				"title": "Deactivate task"
 			}
 		],
 		"configuration": {
@@ -59,7 +59,7 @@
 		"viewsContainers": {
 			"activitybar": [
 				{
-					"icon": "resources/icons/logo.svg",
+					"icon": "resources/logo/logo.svg",
 					"id": "hoo-kit",
 					"title": "hoo-kit"
 				}
@@ -89,13 +89,13 @@
 			],
 			"view/item/context": [
 				{
-					"command": "hoo-kit.event.activate",
-					"when": "viewItem == taskInactive",
+					"command": "hoo-kit.task.activate",
+					"when": "hoo-kit.running == true && viewItem == inactive",
 					"group": "inline"
 				},
 				{
-					"command": "hoo-kit.event.deactivate",
-					"when": "viewItem == taskActive",
+					"command": "hoo-kit.task.deactivate",
+					"when": "hoo-kit.running == true && viewItem == active",
 					"group": "inline"
 				}
 			]
