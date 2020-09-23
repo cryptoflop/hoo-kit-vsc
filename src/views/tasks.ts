@@ -51,11 +51,13 @@ export class TasksProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 class HookitWorkspaceItem extends vscode.TreeItem {
 	constructor(label: string, callapsibleState: vscode.TreeItemCollapsibleState, public tasks: HookitTask[]) {
 		super(label, callapsibleState);
+		this.contextValue = 'tasks';
 	}
 }
 
 class HookitTaskItem extends vscode.TreeItem {
 	constructor(label: string, callapsibleState: vscode.TreeItemCollapsibleState, public task: HookitTask) {
 		super(label, callapsibleState);
+		this.contextValue = task.active ? 'taskActive' : 'taskInactive';
 	}
 }

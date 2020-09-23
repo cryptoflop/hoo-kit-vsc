@@ -26,12 +26,14 @@
 				"icon": "$(debug-stop)"
 			},
 			{
-				"command": "hoo-kit.event.start",
-				"title": "Start event"
+				"icon": "$(debug-start)",
+				"command": "hoo-kit.event.activate",
+				"title": "Activate event"
 			},
 			{
-				"command": "hoo-kit.event.stop",
-				"title": "Stop event"
+				"icon": "$(debug-stop)",
+				"command": "hoo-kit.event.deactivate",
+				"title": "Deactivate event"
 			}
 		],
 		"configuration": {
@@ -87,8 +89,14 @@
 			],
 			"view/item/context": [
 				{
-					"command": "hoo-kit.event.start",
-					"when": "viewItem.task.active"
+					"command": "hoo-kit.event.activate",
+					"when": "viewItem == taskInactive",
+					"group": "inline"
+				},
+				{
+					"command": "hoo-kit.event.deactivate",
+					"when": "viewItem == taskActive",
+					"group": "inline"
 				}
 			]
 		}
