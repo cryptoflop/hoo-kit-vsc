@@ -1,8 +1,13 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { ConfigPaths } from './config';
+import { spawn } from 'child_process';
+import path = require('path');
 import { HookitTaskItem, TasksProvider } from './views/tasks';
+
+// hoo-kit imports
+import { Api } from '@wow-kit/hoo-kit/dist/ipc-api';
+import { HookitTask } from '@wow-kit/hoo-kit/dist/types';
+import { RemoteTerminalRequest } from '@wow-kit/hoo-kit/dist/terminal/remoteTerminal';
 
 let extensionContext: vscode.ExtensionContext;
 export function getExtensionContext() {
@@ -105,7 +110,7 @@ function initialize() {
 	declareViews();
 
 	const shouldStart = getConfig<boolean>(ConfigPaths.RunOnStart).some((a) => a === true);
-	if (shouldStart) {
+	if (true || shouldStart) {
 		startHookit();
 	}
 
@@ -142,14 +147,44 @@ function declareViews() {
 	);
 }
 
+export let hookitApi: Api;
+const DEFAULT_PORT = 41234;
+const DEFAULT_HOST = '127.0.0.1';
+
+function handleTerminalRequest(request: RemoteTerminalRequest) {}
+
 async function startHookit() {
 	if (!publicContext.running) {
+		const extensionDir = path.resolve(__dirname, '../');
+
+		await new Promise((res) => {
+			const hookit = spawn('hoo-kit', ['--skipDefaultInit=true', '--runUiServer=false', '--udpPort=' + DEFAULT_PORT], {
+				shell: true,
+				cwd: extensionDir
+			});
+			hookit.on('error', (err) => console.error(err));
+			hookit.stderr.on('data', (msg: Buffer) => console.error(msg.toString()));
+			hookit.stdout.on('data', (msg: Buffer) => {
+				const lines = msg.toString();
+				console.log(lines);
+				if (lines.includes('hoo-kit running')) {
+					hookitApi = new Api(DEFAULT_PORT, DEFAULT_HOST, res);
+				}
+			});
+		});
+
+		await hookitApi.useRemoteTerminal(handleTerminalRequest);
+		const tasks = getConfig<HookitTask[]>(ConfigPaths.Tasks)[0];
+		await hookitApi.setConfig({ tasks }, () => console.log('on Save called'));
+		await hookitApi.initialize();
+
+		publicContext.running = true;
+
 		// setConfig({ tasks: getConfig<HookitTask>(ConfigPaths.Tasks) }, () => {
 		// 	// todo save config
 		// });
 		// startEventManager();
 		// startTaskManager();
-		publicContext.running = true;
 	}
 }
 
