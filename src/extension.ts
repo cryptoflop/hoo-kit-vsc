@@ -7,7 +7,7 @@ import { HookitTaskItem, TasksProvider } from './views/tasks';
 // hoo-kit imports
 import { Api } from '@wow-kit/hoo-kit/dist/ipc-api';
 import { HookitTask } from '@wow-kit/hoo-kit/dist/types';
-import { RemoteTerminalRequest } from '@wow-kit/hoo-kit/dist/terminal/remoteTerminal';
+import { RemoteTerminalMessage } from '@wow-kit/hoo-kit/dist/terminal/remoteTerminal';
 
 let extensionContext: vscode.ExtensionContext;
 export function getExtensionContext() {
@@ -151,7 +151,13 @@ export let hookitApi: Api;
 const DEFAULT_PORT = 41234;
 const DEFAULT_HOST = '127.0.0.1';
 
-function handleTerminalRequest(request: RemoteTerminalRequest) {}
+function handleTerminalRequest(request: RemoteTerminalMessage) {
+	console.log(request);
+
+	setTimeout(() => {
+		hookitApi.remoteTerminalResponse({ id: request.id, type: 'terminated' } as RemoteTerminalMessage);
+	}, 5000);
+}
 
 async function startHookit() {
 	if (!publicContext.running) {
