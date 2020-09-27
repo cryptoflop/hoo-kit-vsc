@@ -34,6 +34,11 @@
 				"icon": "$(debug-stop)",
 				"command": "hoo-kit.task.deactivate",
 				"title": "Deactivate task"
+			},
+			{
+				"icon": "$(debug-stop)",
+				"command": "hoo-kit.session.terminate",
+				"title": "Terminate Session"
 			}
 		],
 		"configuration": {
@@ -96,6 +101,11 @@
 				{
 					"command": "hoo-kit.task.deactivate",
 					"when": "hoo-kit.running == true && viewItem == active",
+					"group": "inline"
+				},
+				{
+					"command": "hoo-kit.session.terminate",
+					"when": "hoo-kit.running == true && viewItem == session",
 					"group": "inline"
 				}
 			]

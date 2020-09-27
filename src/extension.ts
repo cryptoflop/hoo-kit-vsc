@@ -2,12 +2,14 @@ import * as vscode from 'vscode';
 import { ConfigPaths } from './config';
 import { spawn } from 'child_process';
 import path = require('path');
-import { HookitTaskItem, TasksProvider } from './views/tasks';
+import { HookitTaskItem, HookitTaskSessionItem, TasksProvider } from './views/tasks';
 
 // hoo-kit imports
 import { Api } from '@wow-kit/hoo-kit/dist/ipc-api';
 import { HookitTask } from '@wow-kit/hoo-kit/dist/types';
 import { RemoteTerminalMessage } from '@wow-kit/hoo-kit/dist/terminal/remoteTerminal';
+import { Resource } from '@wow-kit/hoo-kit/dist/resources';
+import { TaskInstance } from '@wow-kit/hoo-kit/dist/event-system/task-manager';
 
 let extensionContext: vscode.ExtensionContext;
 export function getExtensionContext() {
@@ -131,6 +133,12 @@ const commands = [
 		action: (taskNode: HookitTaskItem) => {
 			console.log(taskNode);
 		}
+	},
+	{
+		command: 'session.terminate',
+		action: (sessionNode: HookitTaskSessionItem) => {
+			console.log(sessionNode);
+		}
 	}
 ];
 function declareCommands() {
@@ -139,10 +147,12 @@ function declareCommands() {
 	});
 }
 
+let tasksProvider: TasksProvider;
 function declareViews() {
+	tasksProvider = new TasksProvider();
 	registerDisposable(
 		vscode.window.createTreeView('hoo-kit.tasks', {
-			treeDataProvider: new TasksProvider()
+			treeDataProvider: tasksProvider
 		})
 	);
 }
@@ -152,11 +162,22 @@ const DEFAULT_PORT = 41234;
 const DEFAULT_HOST = '127.0.0.1';
 
 function handleTerminalRequest(request: RemoteTerminalMessage) {
-	console.log(request);
+	// console.log(request);
+	// setTimeout(() => {
+	// 	hookitApi.remoteTerminalResponse({ id: request.id, type: 'terminated' } as RemoteTerminalMessage);
+	// }, 5000);
+}
 
-	setTimeout(() => {
-		hookitApi.remoteTerminalResponse({ id: request.id, type: 'terminated' } as RemoteTerminalMessage);
-	}, 5000);
+function handleResourceChange(resourceChange: { resourceData: unknown; resourceType: Resource }) {
+	console.log(resourceChange);
+	switch (resourceChange.resourceType) {
+		case Resource.Tasks:
+			tasksProvider.tasksChanged(resourceChange.resourceData as HookitTask[]);
+			break;
+		case Resource.TaskInstances:
+			tasksProvider.taskInstancesChanged(resourceChange.resourceData as TaskInstance[]);
+			break;
+	}
 }
 
 async function startHookit() {
@@ -179,18 +200,13 @@ async function startHookit() {
 			});
 		});
 
+		await hookitApi.subscribeForResourceChange(handleResourceChange);
 		await hookitApi.useRemoteTerminal(handleTerminalRequest);
 		const tasks = getConfig<HookitTask[]>(ConfigPaths.Tasks)[0];
 		await hookitApi.setConfig({ tasks }, () => console.log('on Save called'));
 		await hookitApi.initialize();
 
 		publicContext.running = true;
-
-		// setConfig({ tasks: getConfig<HookitTask>(ConfigPaths.Tasks) }, () => {
-		// 	// todo save config
-		// });
-		// startEventManager();
-		// startTaskManager();
 	}
 }
 
