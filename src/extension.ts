@@ -174,17 +174,14 @@ async function createTerminalGroups() {
 			// create terminal groups
 			// really complicated an fragile until vscode adds support for terminal grouping
 			await new Promise((res) => {
-				vscode.window.onDidChangeActiveTerminal((terminal) => {
-					console.log('active', terminal?.name);
-				});
-				const disposeOnOpen = vscode.window.onDidOpenTerminal((terminal) => {
+				const disposeListener = vscode.window.onDidOpenTerminal((terminal) => {
 					console.log('open', terminal?.name);
 					taskNames.shift();
 					groupTerminals.push(terminal);
 					if (taskNames.length > 0) {
 						vscode.commands.executeCommand('workbench.action.terminal.split');
 					} else {
-						disposeOnOpen();
+						disposeListener();
 						res();
 					}
 				}).dispose;
@@ -196,7 +193,7 @@ async function createTerminalGroups() {
 	}
 }
 
-function getTerminalByTaskName(taskName: string): vscode.Terminal {
+function getTerminalByTaskName(taskName: string) {
 	let terminal: vscode.Terminal;
 	const group = Object.keys(terminalGroups).find((groupName) => terminalGroups[groupName].includes(taskName));
 	if (group) {
