@@ -58,11 +58,6 @@
 					"type": "array",
 					"default": [],
 					"description": "hoo-kit task declarations."
-				},
-				"hoo-kit.terminalGroups": {
-					"type": "object",
-					"default": {},
-					"description": "Define terminal groups wich will group hoo-kit sessions."
 				}
 			}
 		},

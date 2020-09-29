@@ -10,6 +10,7 @@ import { HookitTask } from '@wow-kit/hoo-kit/dist/types';
 import { Resource } from '@wow-kit/hoo-kit/dist/resources';
 import { TaskInstance } from '@wow-kit/hoo-kit/dist/event-system/task-manager';
 import { RemoteSessionMessage } from '@wow-kit/hoo-kit/dist/session/remoteSession';
+import { handleSessionRequest } from './terminal';
 
 let extensionContext: vscode.ExtensionContext;
 export function getExtensionContext() {
@@ -86,6 +87,7 @@ export async function deactivate() {
 	if (publicContext.running) {
 		await stopHookit();
 	}
+	dispose();
 }
 
 export function dispose() {
@@ -107,9 +109,12 @@ function shouldActivate() {
 	return getConfig<boolean>(ConfigPaths.Active).some((a) => a === true);
 }
 
+export const onInitialize: (() => void)[] = [];
 function initialize() {
 	declareCommands();
 	declareViews();
+
+	onInitialize.forEach((cb) => cb());
 
 	const shouldStart = getConfig<boolean>(ConfigPaths.RunOnStart).some((a) => a === true);
 	if (true || shouldStart) {
@@ -161,76 +166,9 @@ export let hookitApi: Api;
 const DEFAULT_PORT = 41234;
 const DEFAULT_HOST = '127.0.0.1';
 
-const terminals: { [taskOrGroupName: string]: vscode.Terminal[] } = {};
-let terminalGroups: { [groupName: string]: string[] } = {};
-async function createTerminalGroups() {
-	// load terminalGroups
-	terminalGroups = getConfig<{ [groupName: string]: string[] }>(ConfigPaths.TerminalGroups)[0];
-	if (terminalGroups) {
-		for (const terminalGroupName in terminalGroups) {
-			const taskNames = [...terminalGroups[terminalGroupName]];
-			const groupTerminals: vscode.Terminal[] = [];
-
-			// create terminal groups
-			// really complicated an fragile until vscode adds support for terminal grouping
-			await new Promise((res) => {
-				const disposeListener = vscode.window.onDidOpenTerminal((terminal) => {
-					console.log('open', terminal?.name);
-					taskNames.shift();
-					groupTerminals.push(terminal);
-					if (taskNames.length > 0) {
-						vscode.commands.executeCommand('workbench.action.terminal.split');
-					} else {
-						disposeListener();
-						res();
-					}
-				}).dispose;
-				vscode.window.createTerminal({ hideFromUser: false, name: terminalGroupName }).show();
-			});
-
-			terminals[terminalGroupName] = groupTerminals;
-		}
-	}
-}
-
-function getTerminalByTaskName(taskName: string) {
-	let terminal: vscode.Terminal;
-	const group = Object.keys(terminalGroups).find((groupName) => terminalGroups[groupName].includes(taskName));
-	if (group) {
-		const groupIndex = terminalGroups[group].findIndex((taskNameInGroup) => taskNameInGroup === taskName);
-		terminal = terminals[group][groupIndex];
-	} else {
-		if (terminals[taskName]) {
-			terminal = terminals[taskName][0];
-		} else {
-			const taskTerminal = vscode.window.createTerminal({ hideFromUser: false, name: taskName });
-			terminals[taskName] = [taskTerminal];
-			taskTerminal.show();
-			terminal = taskTerminal;
-		}
-	}
-	if (vscode.window.terminals.includes(terminal)) {
-		return terminal;
-	} else {
-		// terminal was closed by user or error
-		// TODO:
-	}
-}
-
-const sessionsRequests: RemoteSessionMessage[] = [];
-async function handleSessionRequest(request: RemoteSessionMessage) {
-	// 	hookitApi.remoteTerminalResponse({ id: request.id, type: 'terminated' } as RemoteTerminalMessage);
-
-	console.log(request);
-	if (request.type === 'start') {
-		const taskName = request.data.title;
-		const sessionTerminal = getTerminalByTaskName(taskName);
-		sessionTerminal.sendText(request.data.command, true);
-	}
-}
-
-const hookitStates: { [resource: string]: unknown } = {};
+export const resources: { [resource: string]: unknown } = {};
 function handleResourceChange(resourceChange: { resourceData: unknown; resourceType: Resource }) {
+	resources[resourceChange.resourceType] = resourceChange.resourceData;
 	switch (resourceChange.resourceType) {
 		case Resource.Tasks:
 			tasksProvider.tasksChanged(resourceChange.resourceData as HookitTask[]);
@@ -263,7 +201,6 @@ async function startHookit() {
 
 		await hookitApi.subscribeForResourceChange(handleResourceChange);
 
-		await createTerminalGroups();
 		await hookitApi.useRemoteSession(handleSessionRequest);
 
 		const tasks = getConfig<HookitTask[]>(ConfigPaths.Tasks)[0];
